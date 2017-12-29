@@ -2,63 +2,23 @@
     (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
     (:require [goog.dom :as gdo]
               [goog.events :as gev]
+              [twenty18.v2 :as v2]
+              [twenty18.utils :refer [fps now deltatime update-clock]]
               [om.next :as om :refer-macros [defui]]
               [cljs.core.async :refer [put! chan <! >! timeout close!]]
               [om.dom :as dom]))
 
 (enable-console-print!)
 
-;; 60 fps please ~~ 18 milliseconds
-(def fps (int (/ 1000 60)))
-
-;; TIMING AND CLOCK STUFF
-(defn now [] (.getTime (js/Date.)))
-
-(def clock
-  (atom (now)))
-
-(defn deltatime []
-  (- (now) @clock))
-
-;; STATE
 (defonce event-chan (chan))
 (defonce env-chan (chan))
 (defonce render-chan (chan))
-
-(def components
-  {})
-
-(def players
-  {})
-
-(def app-state 
-  (atom
-    {:behaviours #{{:type :goto
-                    :target :health
-                    :player :big-red}}
-     :actions #queue[]
-     :objects [{:type :health
-                :tag :health}]
-     ; :players [{:type :pc
-     ;            :tag :good-green
-     ;            :pos {:x 40 :y 20}}
-     ;           {:type :npc
-     ;            :tag :big-red
-     ;            :pos {:x 0 :y 0}}]
-     :players {:good-green {:type :pc
-                            :pos {:x 40 :y 20}}
-               :big-red {:type :npc
-                         :pos {:x 0 :y 0}}}
-     :player :good-green
-     :offset [0 0]
-     :pointer [0 0]}))
 
 (defn handle-mouse-move [c]
   (fn [event]
     (.preventDefault event)
     (let [x (.-offsetX event)
           y (.-offsetY event)]
-      (swap! app-state assoc-in [:pointer] {:x x :y y})
       (go (>! event-chan {:event :move :pos {:x x :y y}}))
       )))
 
@@ -101,37 +61,78 @@
 
 (def ctx (.getContext canvas "2d"))
 
-(defmulti act (fn [action state] (:type action)))
-(defmethod act :default
-  [action state]
-  state)
-(defmethod act :select
-  [action state])
+(defn to->tos [f state] 
+  (fn [[tag obj]]
+    (f tag obj state)))
 
-; act method takes the behaviour objects and a state and returns the mutated state
-(defmulti beh (fn [obj state] (:type obj)))
-(defmethod beh :default
-  [obj state]
-  state)
-(defmethod beh :goto
-  [{:keys [target player]} state])
+;; multis
+(defmulti draw
+  "draw item to context"
+  (fn [ctx renderable] (:type renderable)))
 
-(defmulti npc (fn [obj] (:type obj)))
-(defmethod npc :default
-  [obj]
-  obj)
+(defmulti get-render
+  (fn [[tag obj]] (:type obj)))
 
-(defmulti draw (fn [ctx obj] (:type obj)))
+(defmulti obj
+  (fn [tag obj state] (:type obj)))
+
+;; STATE
+(def app-state 
+  (atom
+    {:objects {:good-green {:type :pc
+                            :pos {:x 40 :y 20}
+                            :components [:walker]}
+               :bad-blue {:type :npc
+                          :pos {:x 30 :y 10}}
+               :big-red {:type :npc
+                         :pos {:x 0 :y 0}}}
+     :offset [0 0]
+     :pointer [0 0]}))
+
+;;objects---------------------------------
+(defmethod obj :default
+  [tag {:keys [components] :as obj} state]
+  {tag (reduce partial (map beh-fn components))})
+
+;;drawers---------------------------------
 (defmethod draw :default
   [ctx {:keys [type] :as obj}]
   (draw (assoc obj :type type)))
+
+(defmethod draw :image
+  [ctx {:keys [src]}]
+  (let [im (js/Image.)]
+    (set! (.-onload im) (fn [& args] 
+                          (.drawImage ctx im 0 0)))
+    (set! (.-src im) src)))
 
 (defmethod draw :rect
   [ctx {:keys [left top width height color]}]
   (set! (.-fillStyle ctx) color)
   (.fillRect ctx left top width height))
 
-(defmulti get-render (fn [[tag obj]] (:type obj)))
+(defmethod draw :text
+  [ctx {:keys [text font top left]}]
+  (set! (.-font ctx) font)
+  (.fillText ctx text left top))
+
+;;renderers-------------------------------
+(defmethod get-render :default
+  [[tag {:keys [type]}]]
+  {:type :text
+   :font "15px Arial"
+   :text " renderer not implmented for "
+   :top 10 
+   :left 30})
+
+(defmethod get-render :health
+  [[tag {:keys [pos]}]]
+  {:type :image
+   :src "/images/heart.png"
+   :top (:y pos)
+   :left (:x pos)
+   })
+
 (defmethod get-render :pc
   [[tag {:keys [pos]}]]
   {:type :rect
@@ -140,6 +141,7 @@
    :color "rgb(0,200,0)"
    :height 10
    :width 10})
+
 (defmethod get-render :npc
   [[tag {:keys [pos]}]]
   {:type :rect
@@ -150,10 +152,11 @@
    :width 10})
 
 (def environment
-  (let [players (map npc (:players @app-state))]
-    (swap! app-state assoc-in [:players] players)
-    (go-loop []
-             (>! env-chan players)
+  (go-loop []
+           (let [obj-fn (to->tos obj @app-state)
+                 objects (apply merge (map obj-fn (:objects @app-state)))]
+             (swap! app-state assoc-in [:objects] objects)
+             (>! env-chan objects)
              (<! (timeout fps))
              (recur))))
 
@@ -166,14 +169,11 @@
     (alt!
       event-chan ([{:keys [event] :as payload}] 
                   (cond
-                    (= event :mouse-down) 
-                    (let [{:keys [pos]} payload]
-                      (swap! app-state update :actions conj {:type :select :pos pos}))
-                    
                     :default nil
                     ))
       env-chan ([objs] (>! render-chan (map get-render objs)))
       )
+    (<! (timeout 100))
     (recur)))
 
 (def render-loop
@@ -181,43 +181,13 @@
     (let [renderables (<! render-chan)]
       (doseq [renderable renderables]
         (draw ctx renderable))
-      (swap! clock :with (now))
+      (update-clock)
       (<! (timeout fps))
       (recur))))
-
-; (defn stop-loops [& args]
-;   (js/clearInterval environment-loop)
-;   (js/clearInterval render-loop)
-;   )
-
-; (defn start-loops [& args]
-;   (js/clearInterval environment-loop)
-;   (js/clearInterval render-loop)
-;   )
-
-; (def stop-button
-;   (let [btn (gdo/createElement "button")]
-;     (gev/listen btn "click" stop-loops)
-;     (gdo/appendChild btn (gdo/createTextNode "stop"))
-;     btn))
-
-; (def start-button
-;   (let [btn (gdo/createElement "button")]
-;     (gev/listen btn "click" start-loops)
-;     (gdo/appendChild btn (gdo/createTextNode "start"))
-;     btn))
 
 (let [parent (gdo/getElement "app")]
   (gdo/removeChildren parent)
   (gdo/appendChild parent canvas)
-  ; (gdo/appendChild parent stop-button)
-  ; (gdo/appendChild parent start-button)
   )
 
-
-
-(defn on-js-reload []
-  ;; optionally touch your app-state to force rerendering depending on
-  ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
+(defn on-js-reload [])
