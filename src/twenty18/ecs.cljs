@@ -3,12 +3,12 @@
   (:require [cljs.core.async :refer [put! chan <! >! timeout close!]]
             [twenty18.utils :refer [fps]]))
 
-(defonce *entities* (atom {}))
-(defonce *components* (atom {}))
-(defonce *tags* (atom {}))
-(defonce *triggers* (atom #{}))
+(def *entities* (atom {}))
+(def *components* (atom {}))
+(def *tags* (atom {}))
+(def *triggers* (atom #{}))
 
-(defonce *raises* (chan))
+(def *raises* (chan))
 
 (defn defent
   "Register an entity in the CES (BOT) system"
@@ -30,13 +30,14 @@
 (defn deftrigger [name]
   (swap! *triggers* conj name))
 
-(defn raise [trigger]
-  (go (>! *raises* trigger)))
+(defn raise [trigger-name & payload]
+  (go (>! *raises* trigger-name)))
 
-; (go-loop []
-;   (let []
-;     (<! (timeout fps))
-;     (recur)))
+(def raise-loop
+  (go-loop []
+    (let []
+      (<! (timeout 200))
+      (recur))))
 
 ;; EXAMPLES
 (comment

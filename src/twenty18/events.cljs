@@ -18,7 +18,7 @@
     (let [x (.-offsetX event)
           y (.-offsetY event)]
       (swap! *mouse-move* :with {:pos {:x x :y y}})
-      (ecs/raise ::mouse-move))))
+      (ecs/raise ::mouse-move {:pos {:x x :y y}}))))
 
 (defn handle-mouse-down [c]
   (fn [event]
