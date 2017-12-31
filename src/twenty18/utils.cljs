@@ -12,3 +12,7 @@
 
 (defn update-clock []
   (swap! clock :with (now)))
+  
+(defn to->tos [f state]
+  (fn [[tag obj]]
+    (f tag obj state)))
