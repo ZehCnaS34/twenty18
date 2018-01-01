@@ -27,21 +27,21 @@
     (.preventDefault event)
     (let [x (.-offsetX event)
           y (.-offsetY event)]
-      (ecs/raise ::mouse-move {:pos {:x x :y y}}))))
+      (ecs/raise ::mouse-move {:position {:x x :y y}}))))
 
 (defn handle-mouse-down [c]
   (fn [event]
     (.preventDefault event)
     (let [x (.-offsetX event)
           y (.-offsetY event)]
-      (ecs/raise ::mouse-down {:event :mouse-down :pos {:x x :y y}}))))
+      (ecs/raise ::mouse-down {:event :mouse-down :position {:x x :y y}}))))
 
 (defn handle-mouse-up [c]
   (fn [event]
     (.preventDefault event)
     (let [x (.-offsetX event)
           y (.-offsetY event)]
-      (ecs/raise ::mouse-up {:event :mouse-up :pos {:x x :y y}}))))
+      (ecs/raise ::mouse-up {:event :mouse-up :position {:x x :y y}}))))
 
 (defn handle-mouse-enter [c]
   (fn [event]

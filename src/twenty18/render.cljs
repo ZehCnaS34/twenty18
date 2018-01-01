@@ -1,12 +1,14 @@
 (ns twenty18.render
-  (:require [twenty18.ecs :refer [defcomp deftrigger raise]]))
+  (:require [twenty18.ecs :refer [defcomp deftrigger raise]]
+            [twenty18.dom :refer [ctx]]))
 
-(deftrigger ::render)
 
-(defcomp ::drawable
-  {}
-  {:update
-   (fn [this])})
+(defcomp ::renderable
+  {:twenty18.events/render
+   (fn [ent]
+     (set! (.-fillStyle ctx) "rgb(200, 0, 0)")
+     (.fillRect ctx 0 0 1 10)
+     ent)})
 
 
 ; (defmethod draw :default

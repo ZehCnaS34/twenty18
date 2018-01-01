@@ -12,6 +12,7 @@
   ([a b & more]
    (reduce + (+ a b) more)))
 
+; emits :on-hit
 (ecs/defcomp ::collider
   {:twenty18.events/update
    (fn [this])})
