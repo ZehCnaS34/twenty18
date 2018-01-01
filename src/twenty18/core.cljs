@@ -18,8 +18,35 @@
 (eve/attach-events canvas)
 (def ctx (.getContext canvas "2d"))
 
-(def game-loop)
-(def render-loop)
+(ecs/defcomp ::renderable
+  {:twenty18.events/render
+   (fn [this]
+     (set! (.-fillStyle ctx) "rgb(200, 0, 0)")
+     (.fillRect ctx 0 0 1 10)
+     this)})
+
+(ecs/defcomp ::clickable
+  {:twenty18.events/mouse-down
+   (fn [this {:keys [pos] :as payload}]
+     (let [click-handler (-> this
+                           ecs/ent->comps
+                           ::clickable
+                           :on-down)]
+       (click-handler this)))}
+
+  {:params {}
+   :handlers #{:on-click}})
+
+(defent ::npc
+  {::renderable
+   {:render (fn [this]
+              (println "request render"))}
+   ::clickable
+   {:on-down (fn [this]
+                (println this (:count this))
+                (update this :count inc))}})
+
+(eve/start-game-loop!)
 
 (let [parent (gdo/getElement "app")]
   (gdo/removeChildren parent)

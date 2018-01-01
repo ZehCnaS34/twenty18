@@ -1,11 +1,21 @@
 (ns twenty18.events
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require [twenty18.ecs :as ecs]
+            [twenty18.utils :as utils]
             [goog.events :as gev]
             [cljs.core.async :refer [put! chan <! >! timeout close!]]))
 
-(ecs/deftrigger ::mouse-mouse)
+(map ecs/deftrigger
+  [::mouse-move
+   ::mouse-down
+   ::mouse-up
+   ::mouse-enter
+   ::mouse-out
+   ::update
+   ::render
+   ::init])
 
+(def game-loop (atom nil))
 (defonce *mouse-move* (atom nil))
 (defonce *mouse-down* (atom nil))
 (defonce *mouse-up* (atom nil))
@@ -17,7 +27,6 @@
     (.preventDefault event)
     (let [x (.-offsetX event)
           y (.-offsetY event)]
-      (swap! *mouse-move* :with {:pos {:x x :y y}})
       (ecs/raise ::mouse-move {:pos {:x x :y y}}))))
 
 (defn handle-mouse-down [c]
@@ -25,24 +34,24 @@
     (.preventDefault event)
     (let [x (.-offsetX event)
           y (.-offsetY event)]
-      (swap! *mouse-down* :with {:event :mouse-down :pos {:x x :y y}}))))
+      (ecs/raise ::mouse-down {:event :mouse-down :pos {:x x :y y}}))))
 
 (defn handle-mouse-up [c]
   (fn [event]
     (.preventDefault event)
     (let [x (.-offsetX event)
           y (.-offsetY event)]
-      (swap! *mouse-up* :with {:event :mouse-up :pos [:x x :y y]}))))
+      (ecs/raise ::mouse-up {:event :mouse-up :pos {:x x :y y}}))))
 
 (defn handle-mouse-enter [c]
   (fn [event]
     (.preventDefault event)
-    (swap! *mouse-enter* :with {:event :enter})))
+    (ecs/raise ::mouse-enter {:event :enter})))
 
 (defn handle-mouse-out [c]
   (fn [event]
     (.preventDefault event)
-    (swap! *mouse-out* :with {:event :out})))
+    (ecs/raise ::mouse-out {:event :out})))
 
 (def event-map
   {"mousemove" handle-mouse-move
@@ -55,4 +64,14 @@
   (doseq [[event f] event-map]
     (gev/listen $elt event (f nil))))
 
-(defn mouse-move-event [] @*mouse-move*)
+(defn start-game-loop! []
+  (ecs/raise ::init)
+  (swap! game-loop :with
+    (go-loop []
+      (ecs/raise ::update)
+      (ecs/raise ::render)
+      (utils/update-clock)
+      (<! (timeout utils/fps))
+      (recur))))
+
+(defn stop-game-loop! [])

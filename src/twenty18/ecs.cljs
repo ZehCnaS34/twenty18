@@ -7,46 +7,76 @@
 (def *components* (atom {}))
 (def *tags* (atom {}))
 (def *triggers* (atom #{}))
+(def eid (atom 0))
+(defn id [] (swap! eid inc))
 
 (def *raises* (chan))
 
 (defn defent
   "Register an entity in the CES (BOT) system"
-  [name tags components]
-  (swap! *entities* merge {name {::name name
-                                 ::tags tags
-                                 ::components components}}))
+  ([name components]
+   (defent name #{} components))
+  ([name tags components]
+   (swap! *entities* merge {name {::name name
+                                  ::tags tags
+                                  ::id (id)
+                                  ::components components}})))
+
+(defn ent->comps [ent] (::components ent))
+
+(defn entity->components [e]
+  (let [c-names (keys (::components e))
+        components @*components*]
+    (select-keys components c-names)))
 
 (defn defcomp
   "Register a component"
   ([name handler-map]
-   (swap! *components* merge {name (-> handler-map
-                                     (assoc ::name name))}))
+   (swap! *components* merge
+     {name (-> handler-map
+             (assoc ::name name))}))
   ([name triggers handler-map]
-   (swap! *components* merge {name (-> handler-map
-                                     (assoc ::triggers triggers)
-                                     (assoc ::name name))})))
+   (swap! *components* merge
+     {name (-> handler-map
+             (assoc ::triggers triggers)
+             (assoc ::name name))})))
 
 (defn deftrigger [name]
   (swap! *triggers* conj name))
 
-(defn raise [trigger-name & payload]
-  (go (>! *raises* trigger-name)))
+(defn raise
+  ([trigger-name]
+   (raise trigger-name {}))
+  ([trigger-name payload]
+   (go (>! *raises* {::name trigger-name ::payload payload}))))
 
 (def raise-loop
   (go-loop []
-    (let []
-      (<! (timeout 200))
+    (let [item (<! *raises*)
+          trigger (::name item)
+          payload (::payload item)
+          entities @*entities*]
+      (doseq [[e-name entity] entities]
+        (doseq [[c-name component] (entity->components entity)
+                :when (and (contains? (::components entity) c-name))]))
+          ; (when (= (::id entity) (::id updated-entity))
+          ;   (swap! *entities* assoc e-name updated-entity))))
       (recur))))
 
 ;; EXAMPLES
 (comment
   (defent ::example
-    [:npc]
-    [::walker])
+    #{:npc :enemy}
+    {:twenty18.v2/collider
+     {:params {:width 1 :height 1}
+      :handlers
+      {:on-hit
+       (fn [this other]
+         (println this other))}}
+     :twenty18.v2/transform {}})
 
-  (defcomp ::walker
-    {:update
-      (fn [ent]
-        (println "This gets called when update is called")
-        ent)}))
+  (defcomp ::collider
+    {:on-update
+     (fn [this env width height]
+       (let [pos (:position this)])
+       this)}))

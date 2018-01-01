@@ -1,7 +1,13 @@
 (ns twenty18.render
-  (:require [twenty18.ecs :refer [defcomp deftrigger]]))
+  (:require [twenty18.ecs :refer [defcomp deftrigger raise]]))
 
 (deftrigger ::render)
+
+(defcomp ::drawable
+  {}
+  {:update
+   (fn [this])})
+
 
 ; (defmethod draw :default
 ;   [ctx {:keys [type] :as obj}]

@@ -12,10 +12,21 @@
   ([a b & more]
    (reduce + (+ a b) more)))
 
+(ecs/defcomp ::collider
+  {:twenty18.events/update
+   (fn [this])})
+
 (ecs/defcomp ::transform
-  {:twenty18.events/mouse-move
-   (fn [this payload]
-     (println this payload))}
+  {:twenty18.events/mouse-down
+   (fn [this payload])
+
+   :twenty18.events/mouse-up
+   (fn [this payload])}
   {:update
    (fn [ent]
-     (println (str "updated " (uti/deltatime) "ms ago")))})
+     (println (str "updated " (uti/deltatime) "ms ago")))
+
+   :init
+   (fn [this]
+     (-> this
+       (assoc :position {:x 0 :y 0})))})
