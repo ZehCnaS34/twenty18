@@ -5,11 +5,10 @@
 
 (defcomp ::renderable
   {:twenty18.events/render
-   (fn [ent]
+   (fn [ent _ {:keys [on-render]}]
      (set! (.-fillStyle ctx) "rgb(200, 0, 0)")
-     (.fillRect ctx 0 0 1 10)
-     ent)})
-
+     (.fillRect ctx 0 0 10 10)
+     (on-render ent))})
 
 ; (defmethod draw :default
 ;   [ctx {:keys [type] :as obj}]

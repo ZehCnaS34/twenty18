@@ -29,17 +29,16 @@
         components @*components*]
     (select-keys components c-names)))
 
+(defn component->handlers [c handler]
+  (let [h-names (keys (::handlers c))]))
+
 (defn defcomp
   "Register a component"
   ([name handler-map]
    (swap! *components* merge
-     {name (-> handler-map
-             (assoc ::name name))}))
-  ([name triggers handler-map]
-   (swap! *components* merge
-     {name (-> handler-map
-             (assoc ::triggers triggers)
-             (assoc ::name name))})))
+     {name (-> {}
+             (assoc ::name name)
+             (assoc ::handlers handler-map))})))
 
 (defn deftrigger [name]
   (swap! *triggers* conj name))
@@ -58,9 +57,13 @@
           entities @*entities*]
       (doseq [[e-name entity] entities]
         (doseq [[c-name component] (entity->components entity)
-                :when (and (contains? (::components entity) c-name))]))
-          ; (when (= (::id entity) (::id updated-entity))
-          ;   (swap! *entities* assoc e-name updated-entity))))
+                :when (and (contains? (::components entity) c-name)
+                           (-> component ::handlers trigger))
+                :let [f (-> component ::handlers trigger)
+                      handlers (-> entity ::components c-name)
+                      updated-entity (f entity payload handlers)]]
+          (when (= (::id entity) (::id updated-entity))
+            (swap! *entities* assoc e-name updated-entity))))
       (recur))))
 
 ;; EXAMPLES

@@ -22,12 +22,4 @@
    (fn [this payload])
 
    :twenty18.events/mouse-up
-   (fn [this payload])}
-  {:update
-   (fn [ent]
-     (println (str "updated " (uti/deltatime) "ms ago")))
-
-   :init
-   (fn [this]
-     (-> this
-       (assoc :position {:x 0 :y 0})))})
+   (fn [this payload])})

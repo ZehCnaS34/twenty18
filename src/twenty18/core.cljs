@@ -6,6 +6,8 @@
             [twenty18.ecs :as ecs :refer [defent]]
             [twenty18.events :as eve]
             [twenty18.utils :refer [fps now deltatime update-clock]]
+            [twenty18.dom :refer [canvas]]
+            [twenty18.render]
             [om.next :as om :refer-macros [defui]]
             [cljs.core.async :refer [put! chan <! >! timeout close!]]
             [om.dom :as dom]))
@@ -14,24 +16,23 @@
 
 (defonce render-chan (chan))
 
-(def canvas (gdo/createElement "canvas"))
-(eve/attach-events canvas)
-(def ctx (.getContext canvas "2d"))
-
 (ecs/defcomp ::clickable
   {:twenty18.events/mouse-down
-   (fn [this {:keys [position] :as payload}]
-     (let [click-handler (-> this ::components ::clickable :on-down)]
-       (click-handler this)))}
-
-  {:params {}
-   :handlers #{:on-click}})
+   (fn [this
+        {:keys [position] :as payload}
+        {:keys [on-down]}]
+     (on-down this))
+   :twenty18.events/mouse-up
+   (fn [this _ {:keys [on-up]}]
+     (on-up this))})
 
 (defent ::npc
-   ::clickable
+  {::clickable
    {:on-down (fn [this]
-                (println this (:count this))
-                (update this :count inc))})
+               (update this :count inc))
+    :on-up (fn [this] this)}
+   :twenty18.render/renderable
+   {:on-render (fn [this] this)}})
 
 (eve/start-game-loop!)
 
