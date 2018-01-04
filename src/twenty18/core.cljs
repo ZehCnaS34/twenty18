@@ -14,6 +14,9 @@
 
 (enable-console-print!)
 
+(def width (.-width canvas))
+(def height (.-height canvas))
+
 (defonce render-chan (chan))
 
 (ecs/defcomp ::clickable
@@ -23,16 +26,33 @@
         {:keys [on-down]}]
      (on-down this))
    :twenty18.events/mouse-up
-   (fn [this _ {:keys [on-up]}]
+   (fn [this {:keys [position]} {:keys [on-up]}]
      (on-up this))})
+
+(defent ::gackground
+  {:twenty18.render/square
+   {:init {:position [0 0]
+           :size [width height]
+           :color "blue"}}})
 
 (defent ::npc
   {::clickable
-   {:on-down (fn [this]
-               (update this :count inc))
+   {:on-down
+     (fn [this]
+       (update this :count inc))
     :on-up (fn [this] this)}
-   :twenty18.render/renderable
-   {:on-render (fn [this] this)}})
+   :twenty18.render/square
+   {:init {:position [0 0]}
+    :on-click
+     (fn [this top left]
+       (-> this
+         (assoc :position [left top])))
+    :on-render
+     (fn [this]
+       (-> this
+         (assoc :size [30 30])))}})
+
+
 
 (eve/start-game-loop!)
 

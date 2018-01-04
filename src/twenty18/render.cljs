@@ -2,13 +2,26 @@
   (:require [twenty18.ecs :refer [defcomp deftrigger raise]]
             [twenty18.dom :refer [ctx]]))
 
-
-(defcomp ::renderable
-  {:twenty18.events/render
-   (fn [ent _ {:keys [on-render]}]
-     (set! (.-fillStyle ctx) "rgb(200, 0, 0)")
-     (.fillRect ctx 0 0 10 10)
-     (on-render ent))})
+(defcomp ::square
+  {:twenty18.events/init
+    (fn [ent _ {:keys [init]}]
+      (merge ent init))
+   :twenty18.events/render
+    (fn [ent _ {:keys [on-render]}]
+      (let [on-render (if on-render on-render identity)
+            new-ent (on-render ent)
+            {:keys [position size]} new-ent
+            [top left] position
+            [width height] size
+            color (if (:color new-ent) (:color new-ent) "rgb(200, 0, 0)")]
+        (set! (.-fillStyle ctx) color)
+        (.fillRect ctx top left width height)
+        new-ent))
+   :twenty18.events/mouse-down
+    (fn [ent {:keys [position]} {:keys [on-click]}]
+      (if on-click
+        (on-click ent (:y position) (:x position))
+        ent))})
 
 ; (defmethod draw :default
 ;   [ctx {:keys [type] :as obj}]

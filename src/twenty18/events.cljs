@@ -11,6 +11,7 @@
    ::mouse-up
    ::mouse-enter
    ::mouse-out
+   ::mouse-click
    ::update
    ::render
    ::init])
@@ -53,12 +54,20 @@
     (.preventDefault event)
     (ecs/raise ::mouse-out {:event :out})))
 
+(defn handle-mouse-click [c]
+  (fn [event]
+    (.preventDefault event)
+    (let [x (.-offsetX event)
+          y (.-offsetY event)]
+      (ecs/raise ::mouse-up {:event :mouse-click :position {:x x :y y}}))))
+
 (def event-map
   {"mousemove" handle-mouse-move
    "mousedown" handle-mouse-down
    "mouseup" handle-mouse-up
    "mouseenter" handle-mouse-enter
-   "mouseout" handle-mouse-out})
+   "mouseout" handle-mouse-out
+   "mouseclick" handle-mouse-click})
 
 (defn attach-events [$elt]
   (doseq [[event f] event-map]
