@@ -12,7 +12,7 @@
 
 (defn update-clock []
   (swap! clock :with (now)))
-  
+
 (defn to->tos [f state]
   (fn [[tag obj]]
     (f tag obj state)))
@@ -21,3 +21,6 @@
   (if-not f
     (apply identity args)
     (apply f args)))
+
+(defn nil-or [check other]
+  (if check check other))

@@ -1,7 +1,7 @@
 (ns twenty18.render
   (:require [twenty18.ecs :refer [defcomp deftrigger raise]]
             [twenty18.dom :refer [ctx]]
-            [twenty18.utils :refer [nil-id]]))
+            [twenty18.utils :refer [nil-id nil-or]]))
 
 (defcomp ::square
   {:twenty18.events/init
@@ -13,7 +13,7 @@
             {:keys [position size]} new-ent
             [top left] position
             [width height] size
-            color (if (:color new-ent) (:color new-ent) "rgb(200, 0, 0)")]
+            color (nil-or (:color new-ent) "rgb(200, 0, 0)")]
         (set! (.-fillStyle ctx) color)
         (.fillRect ctx top left width height)
         new-ent))

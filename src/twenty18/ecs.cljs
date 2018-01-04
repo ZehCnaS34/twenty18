@@ -1,6 +1,7 @@
 (ns twenty18.ecs
   (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]])
   (:require [cljs.core.async :refer [put! chan <! >! timeout close!]]
+            [cljs.pprint :refer [pprint]]
             [twenty18.utils :refer [fps]]))
 
 (def *entities* (atom {}))

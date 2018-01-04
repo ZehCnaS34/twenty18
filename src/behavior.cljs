@@ -13,4 +13,4 @@
 
    :twenty18.events/init
    (fn [entity payload {:keys [init]}]
-     (merge entity {::state on-init}))})
+     (merge entity {::state init}))})
