@@ -65,21 +65,3 @@
           (when (= (::id entity) (::id updated-entity))
             (swap! *entities* assoc e-name updated-entity))))
       (recur))))
-
-;; EXAMPLES
-(comment
-  (defent ::example
-    #{:npc :enemy}
-    {:twenty18.v2/collider
-     {:params {:width 1 :height 1}
-      :handlers
-      {:on-hit
-       (fn [this other]
-         (println this other))}}
-     :twenty18.v2/transform {}})
-
-  (defcomp ::collider
-    {:on-update
-     (fn [this env width height]
-       (let [pos (:position this)])
-       this)}))

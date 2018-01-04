@@ -16,3 +16,8 @@
 (defn to->tos [f state]
   (fn [[tag obj]]
     (f tag obj state)))
+
+(defn nil-id [f & args]
+  (if-not f
+    (apply identity args)
+    (apply f args)))

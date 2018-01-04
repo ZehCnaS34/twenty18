@@ -1,6 +1,7 @@
 (ns twenty18.render
   (:require [twenty18.ecs :refer [defcomp deftrigger raise]]
-            [twenty18.dom :refer [ctx]]))
+            [twenty18.dom :refer [ctx]]
+            [twenty18.utils :refer [nil-id]]))
 
 (defcomp ::square
   {:twenty18.events/init
@@ -8,8 +9,7 @@
       (merge ent init))
    :twenty18.events/render
     (fn [ent _ {:keys [on-render]}]
-      (let [on-render (if on-render on-render identity)
-            new-ent (on-render ent)
+      (let [new-ent (nil-id on-render ent)
             {:keys [position size]} new-ent
             [top left] position
             [width height] size
@@ -19,9 +19,12 @@
         new-ent))
    :twenty18.events/mouse-down
     (fn [ent {:keys [position]} {:keys [on-click]}]
-      (if on-click
-        (on-click ent (:y position) (:x position))
-        ent))})
+      (-> (nil-id on-click ent (:y position) (:x position))
+          (assoc ::state {:mouse :down})))
+   :twenty18.events/mouse-up
+   (fn [ent payload handlers]
+     (-> ent
+         (assoc ::state {:mouse :up})))})
 
 ; (defmethod draw :default
 ;   [ctx {:keys [type] :as obj}]

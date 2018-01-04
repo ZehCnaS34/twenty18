@@ -8,6 +8,7 @@
             [twenty18.utils :refer [fps now deltatime update-clock]]
             [twenty18.dom :refer [canvas]]
             [twenty18.render]
+            [twenty18.behavior]
             [om.next :as om :refer-macros [defui]]
             [cljs.core.async :refer [put! chan <! >! timeout close!]]
             [om.dom :as dom]))
@@ -51,6 +52,14 @@
      (fn [this]
        (-> this
          (assoc :size [30 30])))}})
+
+(defent ::pong
+  {:twenty18.render/square
+   {:init {:color "green" :position [50 50] :size [10 10]}}
+   :twenty18.behavior/bounce
+   {:init {:speed 5
+           :x-factor 1
+           :y-factor 1}}})
 
 
 
