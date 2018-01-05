@@ -5,6 +5,26 @@
 
 (def origin {:x 0 :y 0})
 
+(defn keys-match [m & kys]
+  (= (into #{} (select-keys m kys)) (into #{} kys)))
+
+(defmulti box
+  (fn [ds]
+    (cond
+      (keys-match ds #{:x :y :height :width}) :std
+      :default :default
+      )))
+
+(defmethod box [{:keys [x y height width]}]
+  {:x x
+   :y y
+   :x1 x
+   :y1 y
+   :x2 (+ x width)
+   :y2 (+ y height)
+   :width width
+   :height height})
+
 (defn -+
   ([a] a)
   ([a b] {:x (+ (:x a) (:x b))

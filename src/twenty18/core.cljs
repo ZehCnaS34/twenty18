@@ -34,7 +34,7 @@
   {:twenty18.render/square
    {:init {:position [0 0]
            :size [width height]
-           :color "black"}}})
+           :color "white"}}})
 
 (defent ::npc
   {::clickable
@@ -51,18 +51,16 @@
 (defent ::pong
   {:twenty18.render/square
    {:init {:color "green" :position [50 50] :size [10 10]}}
+
    :twenty18.behavior/bounce
    {:params #{:speed}
     :init {:speed 5
            :x-factor 1
-           :y-factor 1}
-    :on-update
-    (fn [this]
-      this)}})
+           :y-factor 1}}})
 
 (defent ::pong
   {:twenty18.render/square
-   {:init {:color "yellow" :position [50 30] :size [5 5]}}
+   {:init {:color "orange" :position [50 30] :size [50 30]}}
    ::clickable {}})
 
 (eve/start-game-loop!)
